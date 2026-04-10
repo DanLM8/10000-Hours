@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Syne } from "next/font/google";
+import Image from "next/image";
 
 const syne = Syne({ subsets: ["latin"], weight: ["800"] });
 
@@ -53,19 +54,30 @@ export default function LoginPage() {
       <div className="w-full max-w-sm space-y-8">
 
         {/* Logo */}
-        <div className="text-center space-y-2">
-          <h1
-            className="text-5xl font-extrabold tracking-tight"
-            style={{ fontFamily: syne.style.fontFamily }}
-          >
-            <span className="bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500 bg-clip-text text-transparent">
-              10,000
-            </span>
-            <span className="text-foreground"> Hours</span>
-          </h1>
-          <p className="text-muted-foreground text-sm">
-            Track your path to mastery.
-          </p>
+        <div className="text-center space-y-4">
+          <div className="flex justify-center">
+            <Image
+              src="/logo.png"
+              alt="10,000 Hours logo"
+              width={200}
+              height={200}
+              className="rounded-2xl"
+            />
+          </div>
+          <div>
+            <h1
+              className="text-5xl font-extrabold tracking-tight"
+              style={{ fontFamily: syne.style.fontFamily }}
+            >
+              <span className="bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500 bg-clip-text text-transparent">
+                10,000
+              </span>
+              <span className="text-foreground"> Hours</span>
+            </h1>
+            <p className="text-muted-foreground text-sm mt-1">
+              Track your path to mastery.
+            </p>
+          </div>
         </div>
 
         {/* Card */}
