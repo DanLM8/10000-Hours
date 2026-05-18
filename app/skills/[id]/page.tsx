@@ -4,12 +4,14 @@ export const dynamic = "force-dynamic";
 
 import { useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useSkill, useSessions, useUpdateSkill, useDeleteSkill } from "@/lib/queries";
+import { useSkill, useSessions, useUpdateSkill, useDeleteSkill, useCreatePracticeTasks } from "@/lib/queries";
 import { ProgressBar } from "@/components/ProgressBar";
 import { Timer } from "@/components/Timer";
 import { LogForm } from "@/components/LogForm";
 import { SessionHistory } from "@/components/SessionHistory";
 import { StreakBadge } from "@/components/StreakBadge";
+import { SkillCoach } from "@/components/SkillCoach";
+import { PracticeTaskList } from "@/components/PracticeTaskList";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -38,6 +40,7 @@ export default function SkillDetailPage() {
   const { data: sessions = [], isLoading: sessionsLoading } = useSessions(id);
   const { mutate: updateSkill } = useUpdateSkill();
   const { mutate: deleteSkill, isPending: isDeleting } = useDeleteSkill();
+  const { mutate: createPracticeTasks } = useCreatePracticeTasks();
 
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState("");
@@ -246,6 +249,18 @@ export default function SkillDetailPage() {
           />
         </div>
       </div>
+
+      {/* AI Coach */}
+      <SkillCoach
+        skill={skill}
+        sessions={sessions}
+        onSaveTasks={(tasks) =>
+          createPracticeTasks({ skillId: skill.id, tasks })
+        }
+      />
+
+      {/* Practice Tasks */}
+      <PracticeTaskList skillId={skill.id} />
 
       {/* Timer */}
       <Timer

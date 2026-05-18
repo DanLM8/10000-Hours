@@ -42,3 +42,21 @@ export interface CreateSessionInput {
   notes?: string;
   logged_at?: string;
 }
+
+export interface PracticeTask {
+  id: string;
+  skill_id?: string;
+  title: string;
+  description?: string | null;
+  duration_min?: number | null;
+  completed?: boolean;
+  created_at?: string;
+}
+
+export interface CoachMessage {
+  id: string;
+  skill_id: string;
+  role: "user" | "assistant";
+  content: string;
+  created_at: string;
+}

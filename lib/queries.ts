@@ -5,6 +5,8 @@ import { supabase } from "@/lib/supabase";
 import {
   Skill,
   Session,
+  PracticeTask,
+  CoachMessage,
   CreateSkillInput,
   UpdateSkillInput,
   CreateSessionInput,
@@ -17,6 +19,8 @@ export const queryKeys = {
   skill: (id: string) => ["skills", id] as const,
   sessions: (skillId: string) => ["sessions", skillId] as const,
   allSessions: ["sessions", "all"] as const,
+  practiceTasks: (skillId: string) => ["practiceTasks", skillId] as const,
+  coachMessages: (skillId: string) => ["coachMessages", skillId] as const,
 };
 
 // ─── Skills ──────────────────────────────────────────────────────────────────
@@ -183,6 +187,135 @@ export function useDeleteSession() {
       queryClient.invalidateQueries({ queryKey: queryKeys.sessions(skillId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.allSessions });
       queryClient.invalidateQueries({ queryKey: queryKeys.skills });
+    },
+  });
+}
+
+// ─── Practice Tasks ───────────────────────────────────────────────────────────
+
+export function usePracticeTasks(skillId: string) {
+  return useQuery({
+    queryKey: queryKeys.practiceTasks(skillId),
+    queryFn: async (): Promise<PracticeTask[]> => {
+      const { data, error } = await supabase
+        .from("practice_tasks")
+        .select("*")
+        .eq("skill_id", skillId)
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: !!skillId,
+  });
+}
+
+export function useCreatePracticeTasks() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      skillId,
+      tasks,
+    }: {
+      skillId: string;
+      tasks: Pick<PracticeTask, "title" | "description" | "duration_min">[];
+    }): Promise<void> => {
+      const { data: { user } } = await supabase.auth.getUser();
+      const rows = tasks.map((t) => ({
+        skill_id: skillId,
+        user_id: user?.id,
+        title: t.title,
+        description: t.description ?? null,
+        duration_min: t.duration_min ?? null,
+        completed: false,
+      }));
+      const { error } = await supabase.from("practice_tasks").insert(rows);
+      if (error) throw error;
+    },
+    onSuccess: (_, { skillId }) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.practiceTasks(skillId) });
+    },
+  });
+}
+
+export function useTogglePracticeTask() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      completed,
+    }: {
+      id: string;
+      skillId: string;
+      completed: boolean;
+    }): Promise<void> => {
+      const { error } = await supabase
+        .from("practice_tasks")
+        .update({ completed })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onMutate: async ({ id, skillId, completed }) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.practiceTasks(skillId) });
+      const previous = queryClient.getQueryData(queryKeys.practiceTasks(skillId));
+      queryClient.setQueryData(
+        queryKeys.practiceTasks(skillId),
+        (old: PracticeTask[] = []) =>
+          old.map((t) => (t.id === id ? { ...t, completed } : t))
+      );
+      return { previous };
+    },
+    onError: (_err, { skillId }, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(queryKeys.practiceTasks(skillId), context.previous);
+      }
+    },
+    onSettled: (_data, _err, { skillId }) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.practiceTasks(skillId) });
+    },
+  });
+}
+
+// ─── Coach Messages ───────────────────────────────────────────────────────────
+
+export function useCoachMessages(skillId: string) {
+  return useQuery({
+    queryKey: queryKeys.coachMessages(skillId),
+    queryFn: async (): Promise<CoachMessage[]> => {
+      const { data, error } = await supabase
+        .from("coach_messages")
+        .select("*")
+        .eq("skill_id", skillId)
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: !!skillId,
+  });
+}
+
+export function useSaveCoachMessage() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      skillId,
+      role,
+      content,
+    }: {
+      skillId: string;
+      role: "user" | "assistant";
+      content: string;
+    }): Promise<void> => {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error } = await supabase.from("coach_messages").insert({
+        skill_id: skillId,
+        user_id: user?.id,
+        role,
+        content,
+      });
+      if (error) throw error;
+    },
+    onSuccess: (_, { skillId }) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.coachMessages(skillId) });
     },
   });
 }
